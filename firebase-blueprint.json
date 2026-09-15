@@ -1,0 +1,115 @@
+{
+  "entities": {
+    "Billboard": {
+      "title": "Billboard",
+      "type": "object",
+      "properties": {
+        "code": { "type": "string" },
+        "name": { "type": "string" },
+        "address": { "type": "string" },
+        "city": { "type": "string" },
+        "coordinates": { "type": "object" },
+        "type": { "type": "string" },
+        "dimensions": { "type": "string" },
+        "orientation": { "type": "string" },
+        "roadCategory": { "type": "string" },
+        "baseRateMonthly": { "type": "number" },
+        "currentClient": { "type": "string" },
+        "contractExpiry": { "type": "string" },
+        "status": { "type": "string" },
+        "metrics": { "type": "object" },
+        "lastCsvSync": { "type": "string" }
+      },
+      "required": ["code", "name", "address", "coordinates", "status", "metrics"]
+    },
+    "CRMClient": {
+      "title": "CRMClient",
+      "type": "object",
+      "properties": {
+        "companyName": { "type": "string" },
+        "brand": { "type": "string" },
+        "contactPerson": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "industry": { "type": "string" },
+        "activeBillboards": { "type": "array" },
+        "monthlySpend": { "type": "number" },
+        "contractEnd": { "type": "string" },
+        "churnRisk": { "type": "number" },
+        "satisfactionScore": { "type": "number" }
+      },
+      "required": ["companyName", "brand", "email", "industry"]
+    },
+    "SensorAlert": {
+      "title": "SensorAlert",
+      "type": "object",
+      "properties": {
+        "billboardId": { "type": "string" },
+        "billboardName": { "type": "string" },
+        "metricType": { "type": "string" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "value": { "type": "string" },
+        "threshold": { "type": "string" },
+        "severity": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "dispatchedToEmail": { "type": "string" },
+        "dispatchedStatus": { "type": "string" },
+        "acknowledged": { "type": "boolean" }
+      },
+      "required": ["billboardId", "title", "severity", "timestamp"]
+    },
+    "ThresholdConfig": {
+      "title": "ThresholdConfig",
+      "type": "object",
+      "properties": {
+        "minLuxNight": { "type": "number" },
+        "maxPowerCurrent": { "type": "number" },
+        "minVoltage": { "type": "number" },
+        "maxVibration": { "type": "number" },
+        "maxWindSpeed": { "type": "number" },
+        "minTrafficCongestionDrop": { "type": "number" },
+        "notificationEmail": { "type": "string" }
+      },
+      "required": ["notificationEmail"]
+    },
+    "Proposal": {
+      "title": "Proposal",
+      "type": "object",
+      "properties": {
+        "proposalNumber": { "type": "string" },
+        "clientName": { "type": "string" },
+        "clientBrand": { "type": "string" },
+        "clientPic": { "type": "string" },
+        "clientEmail": { "type": "string" },
+        "clientPhone": { "type": "string" },
+        "totalInvestment": { "type": "number" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["proposalNumber", "clientName", "totalInvestment", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/billboards/{billboardId}": {
+      "schema": "Billboard",
+      "description": "Billboard assets and telemetry database"
+    },
+    "/crm_clients/{clientId}": {
+      "schema": "CRMClient",
+      "description": "CRM client database and predictive profiles"
+    },
+    "/sensor_alerts/{alertId}": {
+      "schema": "SensorAlert",
+      "description": "Sensor alerts and threshold trigger logs"
+    },
+    "/threshold_config/{configId}": {
+      "schema": "ThresholdConfig",
+      "description": "Real-time alert threshold configuration"
+    },
+    "/proposals/{proposalId}": {
+      "schema": "Proposal",
+      "description": "Automated billboard client proposals and offers"
+    }
+  }
+}

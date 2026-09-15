@@ -1,0 +1,6 @@
+{
+  "name": "Billboard Location & Sensor Dashboard",
+  "description": "Dashboard pemantauan sensor lokasi billboard, generator penawaran titik avail otomatis via WhatsApp Web & Email, sinkronisasi file CSV Google Drive, peta interaktif, dan analitik AI prediktif CRM.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
