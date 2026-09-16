@@ -29,6 +29,7 @@ interface HeaderProps {
   onOpenThresholdModal: () => void;
   isSimulating: boolean;
   setIsSimulating: React.Dispatch<React.SetStateAction<boolean>>;
+  onOpenAiHealerModal?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -42,6 +43,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenThresholdModal,
   isSimulating,
   setIsSimulating,
+  onOpenAiHealerModal,
 }) => {
   const { showToast } = useToast();
   const unreadAlerts = alerts.filter((a) => !a.acknowledged);
@@ -111,6 +113,21 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Action Controls & Authentication */}
         <div className="flex items-center flex-wrap gap-2.5">
+          {/* AI Auto-Healer Sentinel Button */}
+          {onOpenAiHealerModal && (
+            <button
+              onClick={onOpenAiHealerModal}
+              title="Buka AI Auto-Healer: Diagnostik & Perbaikan Otomatis Seluruh Sistem"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border-emerald-600/50 shadow-sm cursor-pointer"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
+              <span>AI Auto-Fix</span>
+              <span className="px-1.5 py-0.2 rounded bg-emerald-500/20 text-[10px] text-emerald-300 border border-emerald-500/30">
+                {criticalAlerts.length === 0 ? '100% Sehat' : 'Stabilkan'}
+              </span>
+            </button>
+          )}
+
           {/* Real-time simulation toggle */}
           <button
             onClick={() => setIsSimulating(!isSimulating)}

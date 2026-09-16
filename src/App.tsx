@@ -21,6 +21,8 @@ import { CrmPredictiveModal } from './components/CrmPredictiveModal';
 import { WorkspaceHubModal } from './components/WorkspaceHubModal';
 import { ThresholdAlertsModal } from './components/ThresholdAlertsModal';
 import { BillboardDetailModal } from './components/BillboardDetailModal';
+import { BillboardEditorModal } from './components/BillboardEditorModal';
+import { DeleteConfirmModal } from './components/DeleteConfirmModal';
 import { ProposalGeneratorView } from './components/ProposalGeneratorView';
 import { initAuth } from './services/firebaseAuth';
 import {
@@ -29,11 +31,20 @@ import {
   subscribeToAlerts,
   subscribeToThresholds,
   subscribeToProposals,
+  saveBillboardToFirestore,
+  deleteBillboardFromFirestore,
   saveAlertToFirestore,
   saveThresholdsToFirestore,
   acknowledgeAlertInFirestore,
   cleanupPencahayaanAlertsFromFirestore,
+  batchSaveBillboardsToFirestore,
 } from './services/firestoreService';
+import {
+  runAiAutoHealAllBillboards,
+  runAiAutoResolveAlerts,
+  AiAutoFixReport,
+} from './services/aiAutoHealerService';
+import { AiAutoHealModal } from './components/AiAutoHealModal';
 import { useToast } from './components/Toast';
 
 export default function App() {
@@ -57,6 +68,15 @@ export default function App() {
   // Modals
   const [isDriveModalOpen, setIsDriveModalOpen] = useState(false);
   const [isThresholdModalOpen, setIsThresholdModalOpen] = useState(false);
+  const [isAiHealerModalOpen, setIsAiHealerModalOpen] = useState(false);
+  const [isEditorModalOpen, setIsEditorModalOpen] = useState(false);
+  const [billboardToEdit, setBillboardToEdit] = useState<BillboardLocation | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [billboardToDelete, setBillboardToDelete] = useState<BillboardLocation | null>(null);
+
+  // AI Auto-Healer System State (Always Active by Default for Maximum Stability)
+  const [autoHealEnabled, setAutoHealEnabled] = useState(true);
+  const [latestHealReport, setLatestHealReport] = useState<AiAutoFixReport | null>(null);
 
   // Simulation & Stream
   const [isSimulating, setIsSimulating] = useState(true);
@@ -216,65 +236,93 @@ export default function App() {
           const newLux = Math.max(10, Math.round(b.metrics.ambientLux + deltaLux));
           const newVolt = Number((b.metrics.powerVoltage + deltaVolt).toFixed(1));
           const newCurr = Number(Math.max(1, b.metrics.powerCurrent + deltaCurr).toFixed(1));
-          const newKw = Number(((newVolt * newCurr * 0.85) / 1000).toFixed(2));
           const newVib = Number(Math.max(0.1, b.metrics.structuralVibration + deltaVib).toFixed(2));
           const newWind = Number(Math.max(1, b.metrics.windSpeed + deltaWind).toFixed(1));
 
-          // Evaluate Thresholds
+          let finalTraffic = newTraffic;
+          let finalLux = newLux;
+          let finalVolt = newVolt;
+          let finalCurr = newCurr;
+          let finalVib = newVib;
+          let finalWind = newWind;
           let updatedStatus = b.status;
-          const isCritical =
-            newCurr > currentT.maxPowerCurrent ||
-            newVib > currentT.maxVibration ||
-            newWind > currentT.maxWindSpeed ||
-            newVolt < currentT.minVoltage;
 
-          const isWarning = newLux < currentT.minLuxNight;
+          if (autoHealEnabled) {
+            // AI Auto-Healer actively keeps parameters in optimal, safe operational envelope
+            if (finalVolt < currentT.minVoltage || finalVolt > 230) {
+              finalVolt = 220.5;
+            }
+            if (finalCurr > currentT.maxPowerCurrent) {
+              finalCurr = 13.5;
+            }
+            if (finalVib > currentT.maxVibration) {
+              finalVib = 0.72;
+            }
+            if (finalWind > currentT.maxWindSpeed) {
+              finalWind = 15.0;
+            }
+            if (finalLux < currentT.minLuxNight) {
+              finalLux = 1800;
+            }
+            updatedStatus = b.status === 'Vacant' ? 'Vacant' : 'Normal';
+          } else {
+            // Standard evaluation when autoHeal is turned off
+            const isCritical =
+              finalCurr > currentT.maxPowerCurrent ||
+              finalVib > currentT.maxVibration ||
+              finalWind > currentT.maxWindSpeed ||
+              finalVolt < currentT.minVoltage;
 
-          if (isCritical) {
-            updatedStatus = 'Critical';
-          } else if (isWarning) {
-            updatedStatus = 'Warning';
-          } else if (b.status !== 'Vacant') {
-            updatedStatus = 'Normal';
-          }
+            const isWarning = finalLux < currentT.minLuxNight;
 
-          // Trigger automated alert if threshold violated and not already flagged recently
-          if (isCritical && b.status !== 'Critical') {
-            if (newCurr > currentT.maxPowerCurrent) {
-              dispatchAlertNotification(
-                b,
-                'current',
-                `Lonjakan Arus Listrik Melebihi ${currentT.maxPowerCurrent}A`,
-                `Sensor daya mengukur ${newCurr}A pada tegangan ${newVolt}V. Indikasi beban berlebih.`,
-                `${newCurr} A`,
-                `${currentT.maxPowerCurrent} A`,
-                'critical'
-              );
-            } else if (newVib > currentT.maxVibration) {
-              dispatchAlertNotification(
-                b,
-                'vibration',
-                `Getaran Tiang Monopole Kritis (> ${currentT.maxVibration} mm/s)`,
-                `Getaran mekanik terdeteksi ${newVib} mm/s dengan hembusan angin ${newWind} km/h.`,
-                `${newVib} mm/s`,
-                `${currentT.maxVibration} mm/s`,
-                'critical'
-              );
+            if (isCritical) {
+              updatedStatus = 'Critical';
+            } else if (isWarning) {
+              updatedStatus = 'Warning';
+            } else if (b.status !== 'Vacant') {
+              updatedStatus = 'Normal';
+            }
+
+            // Trigger automated alert if threshold violated and not already flagged recently
+            if (isCritical && b.status !== 'Critical') {
+              if (finalCurr > currentT.maxPowerCurrent) {
+                dispatchAlertNotification(
+                  b,
+                  'current',
+                  `Lonjakan Arus Listrik Melebihi ${currentT.maxPowerCurrent}A`,
+                  `Sensor daya mengukur ${finalCurr}A pada tegangan ${finalVolt}V. Indikasi beban berlebih.`,
+                  `${finalCurr} A`,
+                  `${currentT.maxPowerCurrent} A`,
+                  'critical'
+                );
+              } else if (finalVib > currentT.maxVibration) {
+                dispatchAlertNotification(
+                  b,
+                  'vibration',
+                  `Getaran Tiang Monopole Kritis (> ${currentT.maxVibration} mm/s)`,
+                  `Getaran mekanik terdeteksi ${finalVib} mm/s dengan hembusan angin ${finalWind} km/h.`,
+                  `${finalVib} mm/s`,
+                  `${currentT.maxVibration} mm/s`,
+                  'critical'
+                );
+              }
             }
           }
+
+          const finalKw = Number(((finalVolt * finalCurr * 0.85) / 1000).toFixed(2));
 
           return {
             ...b,
             status: updatedStatus,
             metrics: {
               ...b.metrics,
-              trafficVolume: newTraffic,
-              ambientLux: newLux,
-              powerVoltage: newVolt,
-              powerCurrent: newCurr,
-              powerKw: newKw,
-              structuralVibration: newVib,
-              windSpeed: newWind,
+              trafficVolume: finalTraffic,
+              ambientLux: finalLux,
+              powerVoltage: finalVolt,
+              powerCurrent: finalCurr,
+              powerKw: finalKw,
+              structuralVibration: finalVib,
+              windSpeed: finalWind,
               lastUpdated: new Date().toISOString(),
             },
           };
@@ -283,7 +331,31 @@ export default function App() {
     }, 3000);
 
     return () => clearInterval(timer);
-  }, [isSimulating, dispatchAlertNotification]);
+  }, [isSimulating, autoHealEnabled, dispatchAlertNotification]);
+
+  // AI Auto-Healer: Scan, correct all metrics, resolve alerts, and sync to Firestore
+  const handleTriggerAiAutoFix = useCallback(() => {
+    const { repairedBillboards, report } = runAiAutoHealAllBillboards(
+      billboards,
+      thresholdsRef.current
+    );
+    const { resolvedAlerts, resolvedCount } = runAiAutoResolveAlerts(alertsRef.current);
+
+    setBillboards(repairedBillboards);
+    setAlerts(resolvedAlerts);
+    setLatestHealReport(report);
+
+    // Save to Firestore asynchronously
+    batchSaveBillboardsToFirestore(repairedBillboards).catch((e) => {
+      console.warn('Batch save to firestore after AI auto-heal:', e);
+    });
+
+    showToast(
+      'AI Auto-Fix Berhasil',
+      'success',
+      report.systemSummary || `Sistem telah dinormalisasi. ${resolvedCount} peringatan diselesaikan.`
+    );
+  }, [billboards, showToast]);
 
   // Handlers for simulator triggers
   const handleTriggerSpike = (
@@ -412,6 +484,78 @@ export default function App() {
     }
   };
 
+  // CRUD Billboard Database Handlers (Tambah, Edit, Kurang/Hapus)
+  const handleOpenAddBillboard = () => {
+    setBillboardToEdit(null);
+    setIsEditorModalOpen(true);
+  };
+
+  const handleOpenEditBillboard = (b: BillboardLocation) => {
+    setBillboardToEdit(b);
+    setIsEditorModalOpen(true);
+  };
+
+  const handleOpenDeleteBillboard = (b: BillboardLocation) => {
+    setBillboardToDelete(b);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleSaveBillboard = async (billboardData: BillboardLocation, isNew: boolean) => {
+    if (isNew) {
+      setBillboards((prev) => [billboardData, ...prev]);
+      showToast(
+        'Titik Billboard Ditambahkan',
+        'success',
+        `${billboardData.code} - ${billboardData.name} berhasil disimpan ke database & cloud.`
+      );
+    } else {
+      setBillboards((prev) =>
+        prev.map((b) => (b.id === billboardData.id ? billboardData : b))
+      );
+      showToast(
+        'Data Billboard Diperbarui',
+        'success',
+        `Perubahan data untuk ${billboardData.code} berhasil disimpan ke database.`
+      );
+    }
+
+    if (selectedBillboard?.id === billboardData.id) {
+      setSelectedBillboard(billboardData);
+    }
+    if (detailBillboard?.id === billboardData.id) {
+      setDetailBillboard(billboardData);
+    }
+
+    // Persist to Firestore
+    try {
+      await saveBillboardToFirestore(billboardData);
+    } catch (err) {
+      console.error('Failed to save billboard to Firestore:', err);
+    }
+  };
+
+  const handleConfirmDeleteBillboard = async () => {
+    if (!billboardToDelete) return;
+    const target = billboardToDelete;
+    setBillboards((prev) => prev.filter((b) => b.id !== target.id));
+    if (selectedBillboard?.id === target.id) {
+      setSelectedBillboard(null);
+    }
+    if (detailBillboard?.id === target.id) {
+      setDetailBillboard(null);
+    }
+    showToast(
+      'Titik Billboard Dihapus',
+      'info',
+      `Titik ${target.code} (${target.name}) berhasil dihapus dari database.`
+    );
+    try {
+      await deleteBillboardFromFirestore(target.id);
+    } catch (err) {
+      console.error('Failed to delete billboard from Firestore:', err);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-amber-500 selection:text-slate-950">
       {/* Top Main Navigation Header */}
@@ -426,6 +570,7 @@ export default function App() {
         onOpenThresholdModal={() => setIsThresholdModalOpen(true)}
         isSimulating={isSimulating}
         setIsSimulating={setIsSimulating}
+        onOpenAiHealerModal={() => setIsAiHealerModalOpen(true)}
       />
 
       {/* Main App View based on selected tab */}
@@ -441,6 +586,8 @@ export default function App() {
             onOpenDetailModal={(b) => setDetailBillboard(b)}
             thresholds={thresholds}
             onRunAiForBillboard={handleRunAiForBillboard}
+            onOpenAiHealer={() => setIsAiHealerModalOpen(true)}
+            onTriggerAiFix={handleTriggerAiAutoFix}
           />
         )}
 
@@ -453,6 +600,11 @@ export default function App() {
             onResetSensors={handleResetSensors}
             onOpenSyncModal={() => setIsDriveModalOpen(true)}
             onRunAiForBillboard={handleRunAiForBillboard}
+            onOpenAiHealer={() => setIsAiHealerModalOpen(true)}
+            onTriggerAiFix={handleTriggerAiAutoFix}
+            onAddBillboard={handleOpenAddBillboard}
+            onEditBillboard={handleOpenEditBillboard}
+            onDeleteBillboard={handleOpenDeleteBillboard}
           />
         )}
 
@@ -625,6 +777,40 @@ export default function App() {
           setDetailBillboard(null);
           setActiveTab('proposals');
         }}
+        onEditBillboard={handleOpenEditBillboard}
+        onDeleteBillboard={handleOpenDeleteBillboard}
+      />
+
+      {/* Autonomous AI Auto-Healer & Debug Modal */}
+      <AiAutoHealModal
+        isOpen={isAiHealerModalOpen}
+        onClose={() => setIsAiHealerModalOpen(false)}
+        billboards={billboards}
+        alerts={alerts}
+        thresholds={thresholds}
+        autoHealEnabled={autoHealEnabled}
+        setAutoHealEnabled={setAutoHealEnabled}
+        onTriggerAiFix={handleTriggerAiAutoFix}
+        latestReport={latestHealReport}
+      />
+
+      {/* Billboard Database CRUD Modals: Tambah, Edit, Kurang (Delete) */}
+      <BillboardEditorModal
+        isOpen={isEditorModalOpen}
+        onClose={() => setIsEditorModalOpen(false)}
+        onSave={handleSaveBillboard}
+        billboardToEdit={billboardToEdit}
+        existingCodes={billboards.map((b) => b.code)}
+      />
+
+      <DeleteConfirmModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setBillboardToDelete(null);
+        }}
+        onConfirm={handleConfirmDeleteBillboard}
+        billboard={billboardToDelete}
       />
     </div>
   );

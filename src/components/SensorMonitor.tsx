@@ -36,6 +36,9 @@ import {
   ChevronDown,
   ChevronUp,
   RotateCcw,
+  Plus,
+  Pencil,
+  Trash2,
 } from 'lucide-react';
 import { exportBillboardsToCsv } from '../services/googleDriveService';
 import { useToast } from './Toast';
@@ -51,6 +54,11 @@ interface SensorMonitorProps {
   onResetSensors: () => void;
   onOpenSyncModal: () => void;
   onRunAiForBillboard: (b: BillboardLocation) => void;
+  onOpenAiHealer?: () => void;
+  onTriggerAiFix?: () => void;
+  onAddBillboard?: () => void;
+  onEditBillboard?: (b: BillboardLocation) => void;
+  onDeleteBillboard?: (b: BillboardLocation) => void;
 }
 
 export const SensorMonitor: React.FC<SensorMonitorProps> = ({
@@ -61,6 +69,11 @@ export const SensorMonitor: React.FC<SensorMonitorProps> = ({
   onResetSensors,
   onOpenSyncModal,
   onRunAiForBillboard,
+  onOpenAiHealer,
+  onTriggerAiFix,
+  onAddBillboard,
+  onEditBillboard,
+  onDeleteBillboard,
 }) => {
   const { showToast } = useToast();
   const [search, setSearch] = useState('');
@@ -213,15 +226,28 @@ export const SensorMonitor: React.FC<SensorMonitorProps> = ({
         </div>
 
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-sm flex flex-col justify-between">
-          <div className="text-xs text-slate-400">Aksi Cepat Database</div>
-          <div className="flex items-center gap-2 mt-2">
+          <div className="flex items-center justify-between text-xs text-slate-400">
+            <span>Aksi Cepat Database</span>
+            <span className="text-[10px] text-emerald-400 font-mono">CRUD Aktif</span>
+          </div>
+          <div className="flex items-center gap-1.5 mt-2">
+            {onAddBillboard && (
+              <button
+                onClick={onAddBillboard}
+                className="w-full py-1.5 px-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-1 transition-all cursor-pointer shadow-sm"
+                title="Tambah data titik billboard baru"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>+ Titik</span>
+              </button>
+            )}
             <button
               onClick={handleDownloadCsv}
-              className="w-full py-1.5 px-2.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-1 transition-all"
+              className="w-full py-1.5 px-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-1 transition-all"
               title="Ekspor database telemetri ke CSV"
             >
               <Download className="w-3.5 h-3.5" />
-              <span>Unduh CSV</span>
+              <span>CSV</span>
             </button>
             <button
               onClick={onOpenSyncModal}
@@ -256,6 +282,31 @@ export const SensorMonitor: React.FC<SensorMonitorProps> = ({
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            {/* Tambah Titik Billboard Baru */}
+            {onAddBillboard && (
+              <button
+                onClick={onAddBillboard}
+                className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-500 text-white shadow-md shadow-amber-900/30 transition-all flex items-center gap-1.5 cursor-pointer"
+                title="Tambah titik reklame billboard baru ke database"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>+ Tambah Billboard</span>
+              </button>
+            )}
+
+            {/* AI Auto-Healer Trigger */}
+            <button
+              onClick={() => {
+                if (onOpenAiHealer) onOpenAiHealer();
+                else if (onTriggerAiFix) onTriggerAiFix();
+              }}
+              className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-900/30 transition-all flex items-center gap-1.5 cursor-pointer"
+              title="Jalankan AI Auto-Fix untuk memeriksa dan menstabilkan semua parameter sensor"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-white animate-pulse" />
+              <span>AI Auto-Fix (100% Bebas Eror)</span>
+            </button>
+
             <button
               onClick={handleResetWithToast}
               className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-emerald-950/70 hover:bg-emerald-900 text-emerald-300 border border-emerald-700/50 transition-colors flex items-center gap-1.5 shadow-sm"
@@ -558,6 +609,18 @@ export const SensorMonitor: React.FC<SensorMonitorProps> = ({
               <ArrowUpDown className="w-3.5 h-3.5" />
               <span>{sortAsc ? 'Menaik' : 'Menurun'}</span>
             </button>
+
+            {/* Tambah Titik Baru */}
+            {onAddBillboard && (
+              <button
+                onClick={onAddBillboard}
+                className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-emerald-950/30 transition-all cursor-pointer shrink-0"
+                title="Tambah titik reklame billboard baru ke database"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>+ Tambah Titik</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -672,9 +735,29 @@ export const SensorMonitor: React.FC<SensorMonitorProps> = ({
                         <button
                           onClick={() => onSelectBillboard(b)}
                           className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium text-[11px]"
+                          title="Lihat Detail Telemetri Lengkap"
                         >
                           Detail
                         </button>
+                        {onEditBillboard && (
+                          <button
+                            onClick={() => onEditBillboard(b)}
+                            className="px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 font-semibold text-[11px] flex items-center gap-1 transition-colors cursor-pointer"
+                            title="Edit Data & Parameter Titik Billboard"
+                          >
+                            <Pencil className="w-3 h-3 text-amber-400" />
+                            <span>Edit</span>
+                          </button>
+                        )}
+                        {onDeleteBillboard && (
+                          <button
+                            onClick={() => onDeleteBillboard(b)}
+                            className="p-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 text-[11px] transition-colors cursor-pointer"
+                            title="Hapus Titik Billboard dari Database"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

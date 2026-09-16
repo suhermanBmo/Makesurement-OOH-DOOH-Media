@@ -19,6 +19,8 @@ import {
   ExternalLink,
   Sparkles,
   Send,
+  Pencil,
+  Trash2,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -36,6 +38,8 @@ interface BillboardDetailModalProps {
   thresholds: SensorThresholdConfig;
   onRunAiForBillboard?: (b: BillboardLocation) => void;
   onOpenProposalForBillboard?: (b: BillboardLocation) => void;
+  onEditBillboard?: (b: BillboardLocation) => void;
+  onDeleteBillboard?: (b: BillboardLocation) => void;
 }
 
 export const BillboardDetailModal: React.FC<BillboardDetailModalProps> = ({
@@ -44,6 +48,8 @@ export const BillboardDetailModal: React.FC<BillboardDetailModalProps> = ({
   thresholds,
   onRunAiForBillboard,
   onOpenProposalForBillboard,
+  onEditBillboard,
+  onDeleteBillboard,
 }) => {
   if (!billboard) return null;
 
@@ -264,24 +270,53 @@ export const BillboardDetailModal: React.FC<BillboardDetailModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-slate-800 bg-slate-900 flex items-center justify-between">
-          <div>
+        <div className="p-4 border-t border-slate-800 bg-slate-900 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
             {onOpenProposalForBillboard && (
               <button
                 onClick={() => {
                   onClose();
                   onOpenProposalForBillboard(billboard);
                 }}
-                className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 shadow transition"
+                className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 shadow transition cursor-pointer"
               >
                 <Send className="w-3.5 h-3.5" />
                 <span>Buat Penawaran Titik Ini</span>
               </button>
             )}
+
+            {onEditBillboard && (
+              <button
+                onClick={() => {
+                  onClose();
+                  onEditBillboard(billboard);
+                }}
+                className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/30 font-semibold text-xs flex items-center gap-1.5 transition cursor-pointer"
+                title="Edit Data Lokasi & Parameter Billboard"
+              >
+                <Pencil className="w-3.5 h-3.5" />
+                <span>Edit Titik</span>
+              </button>
+            )}
+
+            {onDeleteBillboard && (
+              <button
+                onClick={() => {
+                  onClose();
+                  onDeleteBillboard(billboard);
+                }}
+                className="px-3 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 font-semibold text-xs flex items-center gap-1.5 transition cursor-pointer"
+                title="Hapus Titik Billboard dari Database"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Hapus</span>
+              </button>
+            )}
           </div>
+
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-medium"
+            className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-medium cursor-pointer"
           >
             Tutup
           </button>

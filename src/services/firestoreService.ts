@@ -135,6 +135,19 @@ export async function saveBillboardToFirestore(billboard: BillboardLocation): Pr
 }
 
 /**
+ * Delete a single billboard from Firestore
+ */
+export async function deleteBillboardFromFirestore(id: string): Promise<void> {
+  const path = `${BILLBOARDS_COLLECTION}/${id}`;
+  try {
+    const ref = doc(db, BILLBOARDS_COLLECTION, id);
+    await deleteDoc(ref);
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, path);
+  }
+}
+
+/**
  * Batch update multiple billboards (e.g. from CSV or Google Sheets sync)
  */
 export async function batchSaveBillboardsToFirestore(billboards: BillboardLocation[]): Promise<void> {

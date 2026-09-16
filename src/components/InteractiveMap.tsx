@@ -46,6 +46,8 @@ interface InteractiveMapProps {
   onOpenDetailModal?: (b: BillboardLocation) => void;
   thresholds: SensorThresholdConfig;
   onRunAiForBillboard?: (b: BillboardLocation) => void;
+  onOpenAiHealer?: () => void;
+  onTriggerAiFix?: () => void;
 }
 
 export const InteractiveMap: React.FC<InteractiveMapProps> = ({
@@ -55,6 +57,8 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   onOpenDetailModal,
   thresholds,
   onRunAiForBillboard,
+  onOpenAiHealer,
+  onTriggerAiFix,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -78,7 +82,6 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   const [heatmapOpacity, setHeatmapOpacity] = useState<number>(0.75);
   const [isHeatConfigOpen, setIsHeatConfigOpen] = useState<boolean>(false);
   const [isHeatPluginReady, setIsHeatPluginReady] = useState<boolean>(false);
-  const [simulatedCriticalId, setSimulatedCriticalId] = useState<string | null>(null);
 
   const getHeatmapMetricValue = useCallback(
     (b: BillboardLocation): number => {
@@ -91,12 +94,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   );
 
   // Filtered billboard list
-  const filteredBillboards = billboards.map((b) => {
-    if (simulatedCriticalId === b.id) {
-      return { ...b, status: 'Critical' as const };
-    }
-    return b;
-  }).filter((b) => {
+  const filteredBillboards = billboards.filter((b) => {
     const matchesType = typeFilter === 'ALL' || b.type === typeFilter;
     const matchesStatus = statusFilter === 'ALL' || b.status === statusFilter;
     const matchesQuery =
@@ -141,15 +139,12 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
 
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-    // Default tile layer (CartoDB Positron / OSM)
-    L.tileLayer(
-      'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-      {
-        attribution:
-          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>',
-        maxZoom: 19,
-      }
-    ).addTo(map);
+    // Default tile layer (OpenStreetMap Standard - 100% Free, No Watermark, No API Key Required)
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> kontributor',
+      maxZoom: 19,
+    }).addTo(map);
 
     mapInstanceRef.current = map;
 
@@ -323,15 +318,16 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
       }
     });
 
-    let tileUrl = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
-    let attribution = '&copy; OpenStreetMap &copy; CARTO';
+    let tileUrl = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+    let attribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> kontributor';
 
     if (mapStyle === 'dark') {
-      tileUrl = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+      tileUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}';
+      attribution = 'Tiles &copy; Esri &mdash; DeLorme, NAVTEQ';
     } else if (mapStyle === 'satellite') {
       tileUrl =
         'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
-      attribution = 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye';
+      attribution = 'Tiles &copy; Esri &mdash; Maxar, Earthstar Geographics';
     }
 
     L.tileLayer(tileUrl, {
@@ -536,7 +532,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
         circlesRef.current.push(circle);
       }
     });
-  }, [filteredBillboards, selectedBillboard, showTrafficRings, thresholds, simulatedCriticalId]);
+  }, [filteredBillboards, selectedBillboard, showTrafficRings, thresholds]);
 
   // Pan to selected billboard
   useEffect(() => {
@@ -786,28 +782,20 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
             <span className="text-cyan-400 font-mono text-[10px]">12 Titik Aktif</span>
           </div>
 
-          {/* Test Signal Pulse Trigger for Operator */}
+          {/* AI Auto-Fix & System Stabilizer Trigger */}
           <button
             onClick={() => {
-              const testId = simulatedCriticalId ? null : (billboards[0]?.id || null);
-              setSimulatedCriticalId(testId);
-              if (testId && mapInstanceRef.current && billboards[0]) {
-                mapInstanceRef.current.flyTo(
-                  [billboards[0].coordinates.lat, billboards[0].coordinates.lng],
-                  16,
-                  { duration: 1.2 }
-                );
+              if (onOpenAiHealer) {
+                onOpenAiHealer();
+              } else if (onTriggerAiFix) {
+                onTriggerAiFix();
               }
             }}
-            className={`px-2 py-0.5 rounded-lg text-[10px] font-medium border flex items-center gap-1 transition-all cursor-pointer ${
-              simulatedCriticalId
-                ? 'bg-rose-600 text-white border-rose-300 shadow-md ring-1 ring-rose-400'
-                : 'bg-slate-800/80 hover:bg-slate-800 text-slate-300 hover:text-white border-slate-700'
-            }`}
-            title="Klik untuk menguji simulasi animasi pulse status 'Critical' pada marker billboard"
+            className="px-2.5 py-0.5 rounded-lg text-[10px] font-bold border flex items-center gap-1.5 transition-all bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border-emerald-600/50 shadow-sm cursor-pointer"
+            title="Buka AI Auto-Healer: Scan & Stabilkan Seluruh Parameter Bebas Error"
           >
-            <Activity className={`w-3 h-3 ${simulatedCriticalId ? 'animate-spin text-white' : 'text-rose-400'}`} />
-            <span>{simulatedCriticalId ? 'Hentikan Uji Kritis' : 'Uji Pulse Kritis'}</span>
+            <Sparkles className="w-3 h-3 text-emerald-400 animate-pulse" />
+            <span>AI Auto-Fix (100% Sehat)</span>
           </button>
         </div>
 
@@ -1008,9 +996,9 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
                 <Layers className="w-3.5 h-3.5 text-amber-400" />
                 <span>Status Sensor Titik Billboard</span>
               </p>
-              <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
-                <ShieldCheck className="w-3 h-3" />
-                <span>Bebas API Key</span>
+              <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20 whitespace-nowrap">
+                <ShieldCheck className="w-3 h-3 text-emerald-400 shrink-0" />
+                <span>OSM (Bebas Key & Watermark)</span>
               </span>
             </div>
             <div className="space-y-1.5 text-slate-300">

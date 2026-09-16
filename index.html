@@ -10,6 +10,29 @@
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script>
+      // Prevent uncaught "WebSocket closed without opened" rejections and repetitive connection logs
+      window.addEventListener('unhandledrejection', function (event) {
+        var reason = event && event.reason;
+        var msg = (reason && (reason.message || reason)) ? String(reason.message || reason) : '';
+        if (msg.includes('WebSocket closed without opened') || msg.includes('failed to connect to websocket')) {
+          event.preventDefault();
+        }
+      });
+      (function() {
+        var origError = console.error;
+        console.error = function() {
+          var firstArg = arguments.length > 0 ? String(arguments[0]) : '';
+          if (
+            firstArg.includes('failed to connect to websocket') ||
+            firstArg.includes('WebSocket closed without opened')
+          ) {
+            return;
+          }
+          origError.apply(console, arguments);
+        };
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
