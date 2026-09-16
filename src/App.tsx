@@ -638,6 +638,8 @@ export default function App() {
             onRunAiForBillboard={handleRunAiForBillboard}
             onOpenAiHealer={() => setIsAiHealerModalOpen(true)}
             onTriggerAiFix={handleTriggerAiAutoFix}
+            isGoogleAiStudio={isGoogleAiStudio}
+            isStudioMode={isStudioMode}
           />
         )}
 
@@ -655,6 +657,8 @@ export default function App() {
             onAddBillboard={handleOpenAddBillboard}
             onEditBillboard={handleOpenEditBillboard}
             onDeleteBillboard={handleOpenDeleteBillboard}
+            isGoogleAiStudio={isGoogleAiStudio}
+            isStudioMode={isStudioMode}
           />
         )}
 

@@ -48,6 +48,8 @@ interface InteractiveMapProps {
   onRunAiForBillboard?: (b: BillboardLocation) => void;
   onOpenAiHealer?: () => void;
   onTriggerAiFix?: () => void;
+  isGoogleAiStudio?: boolean;
+  isStudioMode?: boolean;
 }
 
 export const InteractiveMap: React.FC<InteractiveMapProps> = ({
@@ -59,6 +61,8 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   onRunAiForBillboard,
   onOpenAiHealer,
   onTriggerAiFix,
+  isGoogleAiStudio = false,
+  isStudioMode = false,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -782,21 +786,23 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
             <span className="text-cyan-400 font-mono text-[10px]">12 Titik Aktif</span>
           </div>
 
-          {/* AI Auto-Fix & System Stabilizer Trigger */}
-          <button
-            onClick={() => {
-              if (onOpenAiHealer) {
-                onOpenAiHealer();
-              } else if (onTriggerAiFix) {
-                onTriggerAiFix();
-              }
-            }}
-            className="px-2.5 py-0.5 rounded-lg text-[10px] font-bold border flex items-center gap-1.5 transition-all bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border-emerald-600/50 shadow-sm cursor-pointer"
-            title="Buka AI Auto-Healer: Scan & Stabilkan Seluruh Parameter Bebas Error"
-          >
-            <Sparkles className="w-3 h-3 text-emerald-400 animate-pulse" />
-            <span>AI Auto-Fix (100% Sehat)</span>
-          </button>
+          {/* AI Auto-Fix & System Stabilizer Trigger - ONLY visible in Google AI Studio and Studio Mode */}
+          {isGoogleAiStudio && isStudioMode && (
+            <button
+              onClick={() => {
+                if (onOpenAiHealer) {
+                  onOpenAiHealer();
+                } else if (onTriggerAiFix) {
+                  onTriggerAiFix();
+                }
+              }}
+              className="px-2.5 py-0.5 rounded-lg text-[10px] font-bold border flex items-center gap-1.5 transition-all bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border-emerald-600/50 shadow-sm cursor-pointer"
+              title="Buka AI Auto-Healer: Scan & Stabilkan Seluruh Parameter Bebas Error"
+            >
+              <Sparkles className="w-3 h-3 text-emerald-400 animate-pulse" />
+              <span>AI Auto-Fix (100% Sehat)</span>
+            </button>
+          )}
         </div>
 
         {/* Heatmap Settings Floating Panel */}

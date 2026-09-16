@@ -59,6 +59,8 @@ interface SensorMonitorProps {
   onAddBillboard?: () => void;
   onEditBillboard?: (b: BillboardLocation) => void;
   onDeleteBillboard?: (b: BillboardLocation) => void;
+  isGoogleAiStudio?: boolean;
+  isStudioMode?: boolean;
 }
 
 export const SensorMonitor: React.FC<SensorMonitorProps> = ({
@@ -74,6 +76,8 @@ export const SensorMonitor: React.FC<SensorMonitorProps> = ({
   onAddBillboard,
   onEditBillboard,
   onDeleteBillboard,
+  isGoogleAiStudio = false,
+  isStudioMode = false,
 }) => {
   const { showToast } = useToast();
   const [search, setSearch] = useState('');
@@ -294,18 +298,20 @@ export const SensorMonitor: React.FC<SensorMonitorProps> = ({
               </button>
             )}
 
-            {/* AI Auto-Healer Trigger */}
-            <button
-              onClick={() => {
-                if (onOpenAiHealer) onOpenAiHealer();
-                else if (onTriggerAiFix) onTriggerAiFix();
-              }}
-              className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-900/30 transition-all flex items-center gap-1.5 cursor-pointer"
-              title="Jalankan AI Auto-Fix untuk memeriksa dan menstabilkan semua parameter sensor"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-white animate-pulse" />
-              <span>AI Auto-Fix (100% Bebas Eror)</span>
-            </button>
+            {/* AI Auto-Healer Trigger - ONLY visible in Google AI Studio and Studio Mode */}
+            {isGoogleAiStudio && isStudioMode && (
+              <button
+                onClick={() => {
+                  if (onOpenAiHealer) onOpenAiHealer();
+                  else if (onTriggerAiFix) onTriggerAiFix();
+                }}
+                className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-900/30 transition-all flex items-center gap-1.5 cursor-pointer"
+                title="Jalankan AI Auto-Fix untuk memeriksa dan menstabilkan semua parameter sensor"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-white animate-pulse" />
+                <span>AI Auto-Fix (100% Bebas Eror)</span>
+              </button>
+            )}
 
             <button
               onClick={handleResetWithToast}
