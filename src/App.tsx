@@ -104,7 +104,7 @@ export default function App() {
       } catch (e) {
         // ignore
       }
-      if (!next && activeTab === 'sync') {
+      if (!next && (activeTab === 'sync' || activeTab === 'crm' || activeTab === 'proposals')) {
         setActiveTab('map');
       }
       showToast(
@@ -117,6 +117,13 @@ export default function App() {
       return next;
     });
   };
+
+  // Ensure tabs not visible on GitHub/public fallback to map
+  useEffect(() => {
+    if ((!isGoogleAiStudio || !isStudioMode) && (activeTab === 'crm' || activeTab === 'proposals' || activeTab === 'sync')) {
+      setActiveTab('map');
+    }
+  }, [isGoogleAiStudio, isStudioMode, activeTab]);
 
   // Simulation & Stream
   const [isSimulating, setIsSimulating] = useState(true);
@@ -651,7 +658,7 @@ export default function App() {
           />
         )}
 
-        {activeTab === 'crm' && (
+        {activeTab === 'crm' && isGoogleAiStudio && isStudioMode && (
           <CrmPredictiveModal
             clients={clients}
             billboards={billboards}
@@ -759,8 +766,8 @@ export default function App() {
           </div>
         )}
 
-        {/* Proposals View */}
-        {activeTab === 'proposals' && (
+        {/* Proposals View - ONLY visible in Google AI Studio and Studio Deploy Mode, hidden on GitHub */}
+        {activeTab === 'proposals' && isGoogleAiStudio && isStudioMode && (
           <ProposalGeneratorView
             billboards={billboards}
             clients={clients}

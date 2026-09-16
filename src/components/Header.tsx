@@ -295,32 +295,38 @@ export const Header: React.FC<HeaderProps> = ({
             <span>Database Billboard</span>
           </button>
 
-          <button
-            onClick={() => setActiveTab('crm')}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${
-              activeTab === 'crm'
-                ? 'bg-amber-500 text-slate-950 shadow-sm'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
-            }`}
-          >
-            <Sparkles className="w-3.5 h-3.5 text-purple-400" />
-            <span>Automatisasi AI CRM</span>
-          </button>
+          {/* Automatisasi AI CRM - ONLY visible in Google AI Studio and Studio Deploy Mode, hidden on GitHub */}
+          {isGoogleAiStudio && isStudioMode && (
+            <button
+              onClick={() => setActiveTab('crm')}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${
+                activeTab === 'crm'
+                  ? 'bg-amber-500 text-slate-950 shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+              <span>Automatisasi AI CRM</span>
+            </button>
+          )}
 
-          <button
-            onClick={() => setActiveTab('proposals')}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${
-              activeTab === 'proposals'
-                ? 'bg-amber-500 text-slate-950 shadow-sm ring-1 ring-amber-400'
-                : 'text-emerald-400 hover:text-emerald-300 hover:bg-slate-800'
-            }`}
-          >
-            <Send className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Kirim Penawaran Avail (WA & Email)</span>
-            <span className="px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-bold border border-emerald-500/40">
-              Auto
-            </span>
-          </button>
+          {/* Kirim Penawaran Avail - ONLY visible in Google AI Studio and Studio Deploy Mode, hidden on GitHub */}
+          {isGoogleAiStudio && isStudioMode && (
+            <button
+              onClick={() => setActiveTab('proposals')}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${
+                activeTab === 'proposals'
+                  ? 'bg-amber-500 text-slate-950 shadow-sm ring-1 ring-amber-400'
+                  : 'text-emerald-400 hover:text-emerald-300 hover:bg-slate-800'
+              }`}
+            >
+              <Send className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Kirim Penawaran Avail (WA & Email)</span>
+              <span className="px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-bold border border-emerald-500/40">
+                Auto
+              </span>
+            </button>
+          )}
 
           {/* Workspace & Cloud Sync tab - ONLY visible in Google AI Studio and Studio Deploy Mode */}
           {isGoogleAiStudio && isStudioMode && (
