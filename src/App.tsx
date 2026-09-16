@@ -78,6 +78,47 @@ export default function App() {
   const [autoHealEnabled, setAutoHealEnabled] = useState(true);
   const [latestHealReport, setLatestHealReport] = useState<AiAutoFixReport | null>(null);
 
+  // Detect whether running in AI Google Studio development/deploy container vs published live
+  const [isStudioMode, setIsStudioMode] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('mode') === 'public') return false;
+    if (params.get('mode') === 'studio' || params.get('dev') === 'true' || params.get('deploy') === 'true') return true;
+
+    const stored = localStorage.getItem('bmo_deploy_studio_mode');
+    if (stored !== null) return stored === 'true';
+
+    const host = window.location.hostname;
+    return (
+      host.includes('ais-dev-') ||
+      host === 'localhost' ||
+      host === '127.0.0.1' ||
+      host === '0.0.0.0'
+    );
+  });
+
+  const handleToggleStudioMode = () => {
+    setIsStudioMode((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('bmo_deploy_studio_mode', String(next));
+      } catch (e) {
+        // ignore
+      }
+      if (!next && activeTab === 'sync') {
+        setActiveTab('map');
+      }
+      showToast(
+        next ? 'Mode AI Studio / Deploy Aktif' : 'Mode Publikasi Aktif',
+        'info',
+        next
+          ? 'Menu internal (Cloud Sync, trigger simulasi, & dev tools) sekarang ditampilkan.'
+          : 'Menu internal disembunyikan. Tampilan publik bersih siap dibagikan ke klien.'
+      );
+      return next;
+    });
+  };
+
   // Simulation & Stream
   const [isSimulating, setIsSimulating] = useState(true);
 
@@ -571,6 +612,8 @@ export default function App() {
         isSimulating={isSimulating}
         setIsSimulating={setIsSimulating}
         onOpenAiHealerModal={() => setIsAiHealerModalOpen(true)}
+        isStudioMode={isStudioMode}
+        onToggleStudioMode={handleToggleStudioMode}
       />
 
       {/* Main App View based on selected tab */}
@@ -617,7 +660,7 @@ export default function App() {
           />
         )}
 
-        {activeTab === 'sync' && (
+        {activeTab === 'sync' && isStudioMode && (
           <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
             <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-6">
               <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
