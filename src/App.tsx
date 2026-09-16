@@ -24,6 +24,7 @@ import { BillboardDetailModal } from './components/BillboardDetailModal';
 import { BillboardEditorModal } from './components/BillboardEditorModal';
 import { DeleteConfirmModal } from './components/DeleteConfirmModal';
 import { ProposalGeneratorView } from './components/ProposalGeneratorView';
+import { checkIsGoogleAiStudio } from './utils/environment';
 import { initAuth } from './services/firebaseAuth';
 import {
   seedInitialFirestoreDataIfEmpty,
@@ -78,26 +79,24 @@ export default function App() {
   const [autoHealEnabled, setAutoHealEnabled] = useState(true);
   const [latestHealReport, setLatestHealReport] = useState<AiAutoFixReport | null>(null);
 
-  // Detect whether running in AI Google Studio development/deploy container vs published live
+  // Detect whether running in Google AI Studio development/deploy container vs exported GitHub repository
+  const [isGoogleAiStudio] = useState<boolean>(() => checkIsGoogleAiStudio());
+
+  // Studio Mode is strictly enabled ONLY inside Google AI Studio.
+  // When running on GitHub or exported hosting, isStudioMode is permanently false.
   const [isStudioMode, setIsStudioMode] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return false;
+    if (!checkIsGoogleAiStudio()) return false;
     const params = new URLSearchParams(window.location.search);
     if (params.get('mode') === 'public') return false;
     if (params.get('mode') === 'studio' || params.get('dev') === 'true' || params.get('deploy') === 'true') return true;
 
     const stored = localStorage.getItem('bmo_deploy_studio_mode');
     if (stored !== null) return stored === 'true';
-
-    const host = window.location.hostname;
-    return (
-      host.includes('ais-dev-') ||
-      host === 'localhost' ||
-      host === '127.0.0.1' ||
-      host === '0.0.0.0'
-    );
+    return true; // default in Google AI Studio
   });
 
   const handleToggleStudioMode = () => {
+    if (!isGoogleAiStudio) return;
     setIsStudioMode((prev) => {
       const next = !prev;
       try {
@@ -612,8 +611,9 @@ export default function App() {
         isSimulating={isSimulating}
         setIsSimulating={setIsSimulating}
         onOpenAiHealerModal={() => setIsAiHealerModalOpen(true)}
+        isGoogleAiStudio={isGoogleAiStudio}
         isStudioMode={isStudioMode}
-        onToggleStudioMode={handleToggleStudioMode}
+        onToggleStudioMode={isGoogleAiStudio ? handleToggleStudioMode : undefined}
       />
 
       {/* Main App View based on selected tab */}
@@ -660,7 +660,7 @@ export default function App() {
           />
         )}
 
-        {activeTab === 'sync' && isStudioMode && (
+        {activeTab === 'sync' && isGoogleAiStudio && isStudioMode && (
           <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
             <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-6">
               <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">

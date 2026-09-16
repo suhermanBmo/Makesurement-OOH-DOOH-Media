@@ -30,6 +30,7 @@ interface HeaderProps {
   isSimulating: boolean;
   setIsSimulating: React.Dispatch<React.SetStateAction<boolean>>;
   onOpenAiHealerModal?: () => void;
+  isGoogleAiStudio?: boolean;
   isStudioMode?: boolean;
   onToggleStudioMode?: () => void;
 }
@@ -46,7 +47,8 @@ export const Header: React.FC<HeaderProps> = ({
   isSimulating,
   setIsSimulating,
   onOpenAiHealerModal,
-  isStudioMode = true,
+  isGoogleAiStudio = false,
+  isStudioMode = false,
   onToggleStudioMode,
 }) => {
   const { showToast } = useToast();
@@ -104,7 +106,7 @@ export const Header: React.FC<HeaderProps> = ({
               <h1 className="text-lg font-bold tracking-tight text-white">
                 Bandung Media Outdoor
               </h1>
-              {isStudioMode ? (
+              {isGoogleAiStudio && isStudioMode ? (
                 <span className="hidden sm:inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
                   Peta OpenStreetMap (Tanpa API Key)
@@ -117,7 +119,7 @@ export const Header: React.FC<HeaderProps> = ({
               )}
             </div>
             <p className="text-xs text-slate-400">
-              {isStudioMode
+              {isGoogleAiStudio && isStudioMode
                 ? 'Database Lokasi & IoT Billboard • Google Sheets & Slides • AI CRM'
                 : 'Sistem Informasi Lokasi & Telemetri Billboard Bandung Outdoor'}
             </p>
@@ -126,8 +128,8 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Action Controls & Authentication */}
         <div className="flex items-center flex-wrap gap-2.5">
-          {/* Mode Switcher Toggle Button */}
-          {onToggleStudioMode && (
+          {/* Mode Switcher Toggle Button - ONLY rendered in Google AI Studio, never on GitHub */}
+          {isGoogleAiStudio && onToggleStudioMode && (
             <button
               onClick={onToggleStudioMode}
               title={
@@ -150,8 +152,8 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
-          {/* Internal Studio Developer & Simulation Controls - ONLY visible in Studio Deploy Mode */}
-          {isStudioMode && (
+          {/* Internal Studio Developer & Simulation Controls - ONLY visible in Google AI Studio and Studio Deploy Mode */}
+          {isGoogleAiStudio && isStudioMode && (
             <>
               {/* AI Auto-Healer Sentinel Button */}
               {onOpenAiHealerModal && (
@@ -320,8 +322,8 @@ export const Header: React.FC<HeaderProps> = ({
             </span>
           </button>
 
-          {/* Workspace & Cloud Sync tab - ONLY visible in Studio Deploy Mode */}
-          {isStudioMode && (
+          {/* Workspace & Cloud Sync tab - ONLY visible in Google AI Studio and Studio Deploy Mode */}
+          {isGoogleAiStudio && isStudioMode && (
             <button
               onClick={() => setActiveTab('sync')}
               className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${
@@ -336,8 +338,8 @@ export const Header: React.FC<HeaderProps> = ({
           )}
         </nav>
 
-        {/* Quick Folder Reference Link - ONLY visible in Studio Deploy Mode */}
-        {isStudioMode && (
+        {/* Quick Folder Reference Link - ONLY visible in Google AI Studio and Studio Deploy Mode */}
+        {isGoogleAiStudio && isStudioMode && (
           <div className="hidden lg:flex items-center gap-3 text-xs text-slate-400 py-2">
             <span>Target Folder:</span>
             <a
